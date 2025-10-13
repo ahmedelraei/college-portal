@@ -81,6 +81,7 @@ type LogoutResponse {
 
 type Mutation {
   adminLogin(adminLoginInput: AdminLoginInput!): LoginResponse!
+  assignGrade(grade: String!, registrationId: Int!): Registration!
   bulkRegisterForCourses(bulkRegisterInput: BulkRegistrationInput!): [Registration!]!
   createCourse(createCourseInput: CreateCourseInput!): Course!
   createStudent(createStudentInput: CreateStudentInput!): User!
@@ -95,6 +96,7 @@ type Mutation {
 
 type Query {
   getAllCourses(filters: CourseFilterInput): [Course!]!
+  getAllRegistrations: [Registration!]!
   getAllStudents: [User!]!
   getAvailableCourses(filters: CourseFilterInput): [Course!]!
   getCourseById(id: Int!): Course!
@@ -160,6 +162,7 @@ input UpdateCourseInput {
 
 type User {
   createdAt: DateTime!
+  currentGPA: Float
   email: String!
   firstName: String!
   fullName: String!

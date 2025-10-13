@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToOne,
 } from 'typeorm';
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 import { Student } from './student.entity';
 
 export enum UserRole {
@@ -70,5 +70,11 @@ export class User {
   @Field(() => Int, { nullable: true })
   get studentId(): number | null {
     return this.student?.studentId || null;
+  }
+
+  // Computed property for current GPA (for frontend compatibility)
+  @Field(() => Float, { nullable: true })
+  get currentGPA(): number | null {
+    return this.student?.currentGPA ?? null;
   }
 }

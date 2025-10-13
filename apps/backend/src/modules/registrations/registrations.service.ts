@@ -294,6 +294,10 @@ export class RegistrationsService {
   ): Promise<Registration> {
     const registration = await this.findOne(registrationId);
 
+    console.log(
+      `[assignGrade] Assigning grade ${grade} to registration ${registrationId} for student ${registration.studentId}`,
+    );
+
     // Set the grade
     registration.grade = grade;
 
@@ -309,6 +313,7 @@ export class RegistrationsService {
     };
 
     registration.gradePoints = gradePointMap[grade];
+    console.log(`[assignGrade] Grade points: ${registration.gradePoints}`);
 
     // Mark as completed if not a withdrawal
     if (grade !== Grade.WITHDRAW && grade !== Grade.INCOMPLETE) {
@@ -318,11 +323,28 @@ export class RegistrationsService {
     // Save the registration
     const updatedRegistration =
       await this.registrationsRepository.save(registration);
+    console.log(
+      `[assignGrade] Registration saved with grade ${updatedRegistration.grade}`,
+    );
 
     // Update student's GPA
+    console.log(
+      `[assignGrade] Updating GPA for student ${registration.studentId}`,
+    );
     await this.studentsService.updateGPA(registration.studentId);
+    console.log(`[assignGrade] GPA update completed`);
 
-    return updatedRegistration;
+    // Reload registration with student to get updated GPA
+    const reloadedRegistration = await this.registrationsRepository.findOne({
+      where: { id: updatedRegistration.id },
+      relations: ['course', 'student', 'student.user'],
+    });
+
+    if (!reloadedRegistration) {
+      throw new NotFoundException('Registration not found after update');
+    }
+
+    return reloadedRegistration;
   }
 
   async getAllRegistrations(): Promise<Registration[]> {

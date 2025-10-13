@@ -102,7 +102,7 @@ export class Registration {
 
   @Field(() => Float, { nullable: true })
   @Column('decimal', { precision: 3, scale: 2, nullable: true })
-  gradePoints: number; // A=4.0, B=3.0, C=2.0, D=1.0, F=0.0
+  gradePoints: number | null; // A=4.0, B=3.0, C=2.0, D=1.0, F=0.0
 
   @Field()
   @Column({ default: false })
@@ -126,7 +126,7 @@ export class Registration {
 
   // Method to calculate grade points based on grade
   @Field(() => Float, { nullable: true })
-  calculateGradePoints(): number {
+  calculateGradePoints(): number | null {
     const gradePointMap = {
       [Grade.A]: 4.0,
       [Grade.B]: 3.0,
@@ -137,6 +137,6 @@ export class Registration {
       [Grade.WITHDRAW]: null, // Withdrawals don't count toward GPA
     };
 
-    return gradePointMap[this.grade] ?? 0.0;
+    return gradePointMap[this.grade] ?? null;
   }
 }

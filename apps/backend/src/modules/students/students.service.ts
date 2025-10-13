@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Not } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { Registration, Grade } from '../../entities/registration.entity';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -98,7 +98,7 @@ export class StudentsService {
         semester,
         year,
         isCompleted: true,
-        grade: ['A', 'B', 'C', 'D', 'F'] as any, // Exclude W and I
+        grade: In([Grade.A, Grade.B, Grade.C, Grade.D, Grade.F]), // Exclude W and I
       },
       relations: ['course'],
     });
@@ -108,20 +108,31 @@ export class StudentsService {
   }
 
   async updateGPA(studentId: number): Promise<void> {
+    console.log(`[updateGPA] Updating GPA for student ${studentId}`);
+
     const registrations = await this.registrationsRepository.find({
       where: {
         studentId,
         isCompleted: true,
-        grade: ['A', 'B', 'C', 'D', 'F'] as any, // Exclude W and I
+        grade: In([Grade.A, Grade.B, Grade.C, Grade.D, Grade.F]), // Exclude W and I
       },
       relations: ['course'],
     });
 
+    console.log(
+      `[updateGPA] Found ${registrations.length} completed registrations with grades`,
+    );
+
     const gpaData = this.calculateGPA(registrations);
+    console.log(
+      `[updateGPA] Calculated GPA: ${gpaData.cumulativeGPA} (${gpaData.totalGradePoints} points / ${gpaData.totalCreditHours} hours)`,
+    );
 
     await this.studentsRepository.update(studentId, {
       currentGPA: gpaData.cumulativeGPA,
     });
+
+    console.log(`[updateGPA] GPA updated successfully`);
   }
 
   private calculateGPA(registrations: Registration[]): {
