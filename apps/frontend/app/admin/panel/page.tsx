@@ -42,10 +42,12 @@ import {
   Edit,
   Trash2,
   Eye,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AddStudentForm } from "@/components/admin/add-student-form";
 import { CourseForm } from "@/components/admin/course-form";
+import { GradesManager } from "@/components/admin/grades-manager";
 import { GET_ALL_STUDENTS_QUERY, type User } from "@/lib/graphql/auth";
 import {
   GET_ALL_COURSES_QUERY,
@@ -56,23 +58,44 @@ import { toast } from "sonner";
 
 export default function AdminPanelPage() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
   const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [activeTab, setActiveTab] = useState<"students" | "courses">(
+  const [activeTab, setActiveTab] = useState<"students" | "courses" | "grades">(
     "students"
   );
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/admin/login");
-    } else if (user?.role !== "ADMIN") {
-      router.push("/login");
+    console.log(
+      "[AdminPanel] Auth check - isLoading:",
+      isLoading,
+      "isAuthenticated:",
+      isAuthenticated,
+      "role:",
+      user?.role
+    );
+
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        console.log(
+          "[AdminPanel] Not authenticated, redirecting to /admin/login"
+        );
+        router.push("/admin/login");
+      } else if (user?.role !== "admin") {
+        console.log(
+          "[AdminPanel] Non-admin user, role:",
+          user?.role,
+          "- redirecting to /dashboard"
+        );
+        router.push("/dashboard");
+      } else {
+        console.log("[AdminPanel] Admin authenticated successfully");
+      }
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   const {
     data: studentsData,
@@ -80,7 +103,7 @@ export default function AdminPanelPage() {
     error: studentsError,
     refetch: refetchStudents,
   } = useQuery(GET_ALL_STUDENTS_QUERY, {
-    skip: !isAuthenticated || user?.role !== "ADMIN",
+    skip: !isAuthenticated || user?.role !== "admin",
   });
 
   const {
@@ -89,7 +112,7 @@ export default function AdminPanelPage() {
     error: coursesError,
     refetch: refetchCourses,
   } = useQuery(GET_ALL_COURSES_QUERY, {
-    skip: !isAuthenticated || user?.role !== "ADMIN",
+    skip: !isAuthenticated || user?.role !== "admin",
   });
 
   const [deleteCourse] = useMutation(DELETE_COURSE_MUTATION, {
@@ -147,7 +170,22 @@ export default function AdminPanelPage() {
     }
   };
 
-  if (!isAuthenticated || user?.role !== "ADMIN") {
+  // Show loading state while auth is being checked
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-secondary p-3 rounded-full mb-4 mx-auto w-fit">
+            <Shield className="h-8 w-8 text-secondary-foreground" />
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || user?.role !== "admin") {
     return null; // Will redirect via useEffect
   }
 
@@ -278,17 +316,24 @@ export default function AdminPanelPage() {
                         <Users className="h-5 w-5 text-primary" />
                         Student Management
                       </>
-                    ) : (
+                    ) : activeTab === "courses" ? (
                       <>
                         <BookOpen className="h-5 w-5 text-primary" />
                         Course Management
+                      </>
+                    ) : (
+                      <>
+                        <Award className="h-5 w-5 text-primary" />
+                        Grades Management
                       </>
                     )}
                   </CardTitle>
                   <CardDescription>
                     {activeTab === "students"
                       ? "View and manage all registered students"
-                      : "View and manage all courses"}
+                      : activeTab === "courses"
+                        ? "View and manage all courses"
+                        : "Assign and manage student grades"}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
@@ -308,6 +353,14 @@ export default function AdminPanelPage() {
                     >
                       <BookOpen className="h-4 w-4 mr-2" />
                       Courses
+                    </Button>
+                    <Button
+                      variant={activeTab === "grades" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setActiveTab("grades")}
+                    >
+                      <Award className="h-4 w-4 mr-2" />
+                      Grades
                     </Button>
                   </div>
                   {activeTab === "students" ? (
@@ -360,7 +413,12 @@ export default function AdminPanelPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {activeTab === "students" ? (
+              {activeTab === "grades" ? (
+                // Grades Tab Content - Removed from Card wrapper
+                <div className="-m-6">
+                  <GradesManager />
+                </div>
+              ) : activeTab === "students" ? (
                 // Students Tab Content
                 studentsLoading ? (
                   <div className="text-center py-8">

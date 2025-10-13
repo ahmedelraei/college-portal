@@ -12,17 +12,22 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading) {
       if (requireAuth && !isAuthenticated) {
         router.push("/login");
       } else if (!requireAuth && isAuthenticated) {
-        router.push("/dashboard");
+        // Redirect based on user role
+        if (user?.role === "admin") {
+          router.push("/admin/panel");
+        } else {
+          router.push("/dashboard");
+        }
       }
     }
-  }, [isAuthenticated, isLoading, requireAuth, router]);
+  }, [isAuthenticated, isLoading, user, requireAuth, router]);
 
   if (isLoading) {
     return (

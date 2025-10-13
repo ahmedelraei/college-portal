@@ -8,14 +8,28 @@ import { Navigation } from "@/components/navigation";
 import { Dashboard } from "@/components/dashboard";
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+    if (!isLoading) {
+      console.log(
+        "[HomePage] Auth check - isAuthenticated:",
+        isAuthenticated,
+        "role:",
+        user?.role
+      );
+      if (!isAuthenticated) {
+        console.log("[HomePage] Not authenticated, redirecting to /login");
+        router.push("/login");
+      } else if (user?.role === "admin") {
+        console.log(
+          "[HomePage] Admin user detected, redirecting to /admin/panel"
+        );
+        router.push("/admin/panel");
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   if (isLoading) {
     return (

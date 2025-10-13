@@ -7,7 +7,8 @@ import {
   AdminLoginInput,
   CreateStudentInput,
 } from './dto/auth.inputs';
-import { LoginResponse, LogoutResponse, User } from './types/auth.types';
+import { LoginResponse, LogoutResponse } from './types/auth.types';
+import { User } from '../../entities/user.entity';
 import { UserRole } from '../../entities/user.entity';
 
 interface SessionContext {

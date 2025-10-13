@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@apollo/client";
 import {
   Card,
   CardContent,
@@ -29,20 +30,60 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { GET_MY_CURRENT_SEMESTER_REGISTRATIONS_QUERY } from "@/lib/graphql/registrations";
 
 export function Dashboard() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Redirect if not authenticated
+  // Current semester/year (should match the courses page)
+  const currentSemester = "winter";
+  const currentYear = 2025;
+
+  // Fetch current semester registrations
+  const {
+    data: registrationsData,
+    loading: registrationsLoading,
+    error: registrationsError,
+  } = useQuery(GET_MY_CURRENT_SEMESTER_REGISTRATIONS_QUERY, {
+    variables: {
+      semester: currentSemester,
+      year: currentYear,
+    },
+    skip: !isAuthenticated || authLoading || user?.role === "admin",
+  });
+
+  // Redirect if not authenticated or if admin user
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    } else {
-      setIsLoading(false);
+    console.log(
+      "[Dashboard Component] Auth check - authLoading:",
+      authLoading,
+      "isAuthenticated:",
+      isAuthenticated,
+      "role:",
+      user?.role
+    );
+
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        console.log(
+          "[Dashboard Component] Not authenticated, redirecting to /login"
+        );
+        router.push("/login");
+      } else if (user?.role === "admin") {
+        console.log(
+          "[Dashboard Component] Admin detected, redirecting to /admin/panel"
+        );
+        router.push("/admin/panel");
+      } else {
+        console.log(
+          "[Dashboard Component] Student authenticated, showing dashboard"
+        );
+        setIsLoading(false);
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, user, router]);
 
   const handleLogout = async () => {
     try {
@@ -53,7 +94,19 @@ export function Dashboard() {
     }
   };
 
-  if (isLoading) {
+  // Calculate stats from real data
+  const registrations =
+    registrationsData?.getMyCurrentSemesterRegistrations || [];
+  const activeRegistrations = registrations.filter(
+    (reg: any) => !reg.isDropped
+  );
+  const enrolledCoursesCount = activeRegistrations.length;
+  const totalCreditHours = activeRegistrations.reduce(
+    (sum: number, reg: any) => sum + reg.course.creditHours,
+    0
+  );
+
+  if (isLoading || registrationsLoading) {
     return <DashboardSkeleton />;
   }
 
@@ -71,7 +124,10 @@ export function Dashboard() {
               Welcome back, {user.firstName}!
             </h2>
             <p className="text-muted-foreground text-lg">
-              Student ID: {user.studentId} • Winter Semester 2025
+              Student ID: {user.studentId} •{" "}
+              {currentSemester.charAt(0).toUpperCase() +
+                currentSemester.slice(1)}{" "}
+              Semester {currentYear}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
               Registration Period: October 1 - 7, 2024
@@ -103,10 +159,20 @@ export function Dashboard() {
             </CardTitle>
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="text-2xl font-bold text-foreground">3.75</span>
+              <span className="text-2xl font-bold text-foreground">
+                {user?.currentGPA?.toFixed(2) || "0.00"}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              +0.15 from last semester
+              {user?.currentGPA
+                ? user.currentGPA >= 3.5
+                  ? "Excellent performance"
+                  : user.currentGPA >= 3.0
+                    ? "Good standing"
+                    : user.currentGPA >= 2.0
+                      ? "Satisfactory"
+                      : "Needs improvement"
+                : "No grades yet"}
             </p>
           </CardHeader>
         </Card>
@@ -118,9 +184,15 @@ export function Dashboard() {
             </CardTitle>
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-secondary" />
-              <span className="text-2xl font-bold text-foreground">6</span>
+              <span className="text-2xl font-bold text-foreground">
+                {enrolledCoursesCount}
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground">Winter 2025</p>
+            <p className="text-xs text-muted-foreground">
+              {currentSemester.charAt(0).toUpperCase() +
+                currentSemester.slice(1)}{" "}
+              {currentYear}
+            </p>
           </CardHeader>
         </Card>
 
@@ -131,7 +203,9 @@ export function Dashboard() {
             </CardTitle>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-accent" />
-              <span className="text-2xl font-bold text-foreground">18</span>
+              <span className="text-2xl font-bold text-foreground">
+                {totalCreditHours}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">Current semester</p>
           </CardHeader>
@@ -162,97 +236,94 @@ export function Dashboard() {
               <BookOpen className="h-5 w-5 text-primary" />
               Current Registrations
             </CardTitle>
-            <CardDescription>Winter Semester 2025</CardDescription>
+            <CardDescription>
+              {currentSemester.charAt(0).toUpperCase() +
+                currentSemester.slice(1)}{" "}
+              Semester {currentYear}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              {
-                code: "CS301",
-                name: "Advanced Algorithms",
-                credits: 3,
-                status: "Enrolled",
-                grade: null,
-                instructor: "Dr. Smith",
-                schedule: "MWF 10:00-11:00",
-              },
-              {
-                code: "MATH205",
-                name: "Linear Algebra",
-                credits: 4,
-                status: "Enrolled",
-                grade: null,
-                instructor: "Prof. Johnson",
-                schedule: "TTH 2:00-3:30",
-              },
-              {
-                code: "ENG102",
-                name: "Academic Writing",
-                credits: 3,
-                status: "Enrolled",
-                grade: null,
-                instructor: "Dr. Williams",
-                schedule: "MWF 1:00-2:00",
-              },
-              {
-                code: "CS101",
-                name: "Intro to Computer Science",
-                credits: 3,
-                status: "Enrolled",
-                grade: null,
-                instructor: "Prof. Brown",
-                schedule: "TTH 9:00-10:30",
-              },
-              {
-                code: "PHIL101",
-                name: "Introduction to Philosophy",
-                credits: 2,
-                status: "Enrolled",
-                grade: null,
-                instructor: "Dr. Davis",
-                schedule: "MW 3:00-4:00",
-              },
-            ].map((course) => (
-              <div
-                key={course.code}
-                className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-foreground">
-                      {course.code}
-                    </p>
-                    <Badge variant="outline" className="text-xs">
-                      {course.credits} Credits
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {course.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {course.instructor} • {course.schedule}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                    <CheckCircle className="h-3 w-3 text-green-600" />
-                    {course.status}
-                  </p>
-                  {course.grade ? (
-                    <Badge variant="default" className="text-xs">
-                      Grade: {course.grade}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      In Progress
-                    </Badge>
-                  )}
-                </div>
+            {registrationsError && (
+              <div className="text-center p-4 bg-destructive/10 rounded-lg">
+                <AlertCircle className="h-8 w-8 mx-auto text-destructive mb-2" />
+                <p className="text-sm text-destructive">
+                  Error loading registrations
+                </p>
               </div>
-            ))}
+            )}
+
+            {!registrationsError && activeRegistrations.length === 0 && (
+              <div className="text-center p-8">
+                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground mb-1">
+                  No courses registered yet
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Start by browsing available courses
+                </p>
+              </div>
+            )}
+
+            {!registrationsError &&
+              activeRegistrations.map((registration: any) => (
+                <div
+                  key={registration.id}
+                  className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-foreground">
+                        {registration.course.courseCode}
+                      </p>
+                      <Badge variant="outline" className="text-xs">
+                        {registration.course.creditHours} Credits
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {registration.course.courseName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {registration.course.description}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="mb-2">
+                      {registration.paymentStatus === "paid" ? (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Paid
+                        </p>
+                      ) : (
+                        <p className="text-xs text-yellow-600 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Payment Pending
+                        </p>
+                      )}
+                    </div>
+                    {registration.grade ? (
+                      <Badge variant="default" className="text-xs">
+                        Grade: {registration.grade}
+                      </Badge>
+                    ) : registration.isCompleted ? (
+                      <Badge variant="secondary" className="text-xs">
+                        Completed
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        In Progress
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
             <div className="pt-2 border-t border-border">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push("/courses")}
+              >
                 <BookOpen className="h-4 w-4 mr-2" />
-                View All Courses
+                Browse & Register for Courses
               </Button>
             </div>
           </CardContent>

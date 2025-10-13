@@ -8,7 +8,13 @@ import {
   UpdateDateColumn,
   Unique,
 } from 'typeorm';
-import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Int,
+  Float,
+  registerEnumType,
+} from '@nestjs/graphql';
 import { Student } from './student.entity';
 import { Course } from './course.entity';
 
@@ -29,6 +35,17 @@ export enum Grade {
   WITHDRAW = 'W',
 }
 
+// Register enums with GraphQL
+registerEnumType(PaymentStatus, {
+  name: 'PaymentStatus',
+  description: 'The payment status of a registration',
+});
+
+registerEnumType(Grade, {
+  name: 'Grade',
+  description: 'The grade received for a course',
+});
+
 @ObjectType()
 @Entity('registrations')
 @Unique(['student', 'course', 'semester', 'year'])
@@ -48,7 +65,7 @@ export class Registration {
   @Column()
   studentId: number;
 
-  @Field(() => Course, { nullable: true })
+  @Field(() => Course)
   @ManyToOne(() => Course, (course) => course.registrations, {
     onDelete: 'CASCADE',
   })

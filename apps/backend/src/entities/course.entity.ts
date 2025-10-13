@@ -9,7 +9,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
-import { Registration } from './registration.entity';
 
 export enum Semester {
   SUMMER = 'summer',
@@ -68,9 +67,8 @@ export class Course {
   @ManyToMany(() => Course, (course) => course.prerequisites)
   dependentCourses: Course[];
 
-  @Field(() => [Registration], { nullable: true })
-  @OneToMany(() => Registration, (registration) => registration.course)
-  registrations: Registration[];
+  @OneToMany('Registration', 'course')
+  registrations: any[];
 
   @Field()
   @CreateDateColumn()

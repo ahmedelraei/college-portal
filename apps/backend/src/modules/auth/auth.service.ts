@@ -168,9 +168,17 @@ export class AuthService {
 
     await this.studentsRepository.save(student);
 
-    // Return user without password
-    const { password: _, ...result } = savedUser;
-    return { ...result, studentId };
+    // Reload user with student relation to get the studentId getter to work
+    const userWithStudent = await this.usersRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['student'],
+    });
+
+    if (!userWithStudent) {
+      throw new NotFoundException('User not found after creation');
+    }
+
+    return userWithStudent;
   }
 
   async findById(id: number): Promise<User> {
@@ -289,9 +297,17 @@ export class AuthService {
 
     await this.studentsRepository.save(student);
 
-    // Return user without password
-    const { password: _, ...result } = savedUser;
-    return { ...result, studentId };
+    // Reload user with student relation to get the studentId getter to work
+    const userWithStudent = await this.usersRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ['student'],
+    });
+
+    if (!userWithStudent) {
+      throw new NotFoundException('User not found after creation');
+    }
+
+    return userWithStudent;
   }
 
   async getAllStudents(): Promise<any[]> {

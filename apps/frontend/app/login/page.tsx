@@ -27,7 +27,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -38,17 +38,21 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated based on role
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/dashboard");
+    if (isAuthenticated && user) {
+      if (user.role === "admin") {
+        router.push("/admin/panel");
+      } else {
+        router.push("/dashboard");
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data);
+      const result = await login(data);
       // Small delay to show success state
       setTimeout(() => {
         router.push("/dashboard");

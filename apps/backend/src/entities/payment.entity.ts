@@ -37,7 +37,6 @@ export class Payment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Field(() => Student, { nullable: true })
   @ManyToOne(() => Student, (student) => student.payments, {
     onDelete: 'CASCADE',
   })

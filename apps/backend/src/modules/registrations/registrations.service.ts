@@ -156,7 +156,16 @@ export class RegistrationsService {
       }),
     );
 
-    return this.registrationsRepository.save(registrations);
+    const savedRegistrations =
+      await this.registrationsRepository.save(registrations);
+
+    // Reload with course relation
+    return this.registrationsRepository.find({
+      where: {
+        id: In(savedRegistrations.map((r) => r.id)),
+      },
+      relations: ['course'],
+    });
   }
 
   async findAll(
@@ -173,6 +182,26 @@ export class RegistrationsService {
     return this.registrationsRepository.find({
       where,
       relations: ['course', 'student'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByStudent(studentId: number): Promise<Registration[]> {
+    return this.registrationsRepository.find({
+      where: { studentId, isDropped: false },
+      relations: ['course'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findByStudentAndSemester(
+    studentId: number,
+    semester: string,
+    year: number,
+  ): Promise<Registration[]> {
+    return this.registrationsRepository.find({
+      where: { studentId, semester, year, isDropped: false },
+      relations: ['course'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -255,6 +284,50 @@ export class RegistrationsService {
     return this.registrationsRepository.find({
       where,
       relations: ['course'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async assignGrade(
+    registrationId: number,
+    grade: Grade,
+  ): Promise<Registration> {
+    const registration = await this.findOne(registrationId);
+
+    // Set the grade
+    registration.grade = grade;
+
+    // Calculate grade points based on the grade
+    const gradePointMap = {
+      [Grade.A]: 4.0,
+      [Grade.B]: 3.0,
+      [Grade.C]: 2.0,
+      [Grade.D]: 1.0,
+      [Grade.F]: 0.0,
+      [Grade.INCOMPLETE]: 0.0,
+      [Grade.WITHDRAW]: null,
+    };
+
+    registration.gradePoints = gradePointMap[grade];
+
+    // Mark as completed if not a withdrawal
+    if (grade !== Grade.WITHDRAW && grade !== Grade.INCOMPLETE) {
+      registration.isCompleted = true;
+    }
+
+    // Save the registration
+    const updatedRegistration =
+      await this.registrationsRepository.save(registration);
+
+    // Update student's GPA
+    await this.studentsService.updateGPA(registration.studentId);
+
+    return updatedRegistration;
+  }
+
+  async getAllRegistrations(): Promise<Registration[]> {
+    return this.registrationsRepository.find({
+      relations: ['course', 'student', 'student.user'],
       order: { createdAt: 'DESC' },
     });
   }

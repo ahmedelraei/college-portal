@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../../entities/user.entity';
+import { Student } from '../../entities/student.entity';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -12,6 +13,8 @@ export class SeederService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Student)
+    private studentsRepository: Repository<Student>,
     private configService: ConfigService,
   ) {}
 
@@ -72,11 +75,58 @@ export class SeederService {
     }
   }
 
+  async seedDefaultStudent(): Promise<void> {
+    try {
+      // Check if default student already exists
+      const existingStudent = await this.studentsRepository.findOne({
+        where: { studentId: 12200207 },
+      });
+
+      if (existingStudent) {
+        this.logger.log('Default student already exists, skipping seeding');
+        return;
+      }
+
+      // Create student user
+      const hashedPassword = await bcrypt.hash('Student123!', 12);
+
+      const studentUser = this.usersRepository.create({
+        email: 'student@modernacademy.edu',
+        password: hashedPassword,
+        firstName: 'John',
+        lastName: 'Student',
+        role: UserRole.STUDENT,
+        isActive: true,
+      });
+
+      const savedUser = await this.usersRepository.save(studentUser);
+
+      // Create student record
+      const student = this.studentsRepository.create({
+        studentId: 12200207,
+        userId: savedUser.id,
+        user: savedUser,
+      });
+
+      await this.studentsRepository.save(student);
+
+      this.logger.log(
+        `✅ Default student created successfully with ID: 12200207`,
+      );
+      this.logger.log(`   Email: student@modernacademy.edu`);
+      this.logger.log(`   Password: Student123!`);
+    } catch (error) {
+      this.logger.error('❌ Failed to create default student:', error.message);
+      throw error;
+    }
+  }
+
   async seedAll(): Promise<void> {
     this.logger.log('🌱 Starting database seeding...');
 
     try {
       await this.seedDefaultAdmin();
+      await this.seedDefaultStudent();
       this.logger.log('✅ Database seeding completed successfully');
     } catch (error) {
       this.logger.error('❌ Database seeding failed:', error.message);

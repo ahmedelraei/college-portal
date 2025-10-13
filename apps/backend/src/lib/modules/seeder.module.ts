@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { SeederService } from '../services/seeder.service';
 import { User } from '../../entities/user.entity';
+import { Student } from '../../entities/student.entity';
 
 @Module({
-  imports: [ConfigModule, TypeOrmModule.forFeature([User])],
+  imports: [ConfigModule, TypeOrmModule.forFeature([User, Student])],
   providers: [SeederService],
   exports: [SeederService],
 })

@@ -18,7 +18,7 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.push("/admin/login");
-      } else if (user?.role !== "ADMIN") {
+      } else if (user?.role !== "admin") {
         router.push("/login");
       }
     }
@@ -42,7 +42,7 @@ export function AdminGuard({ children, fallback }: AdminGuardProps) {
   }
 
   // Don't render children if not authenticated or not admin
-  if (!isAuthenticated || user?.role !== "ADMIN") {
+  if (!isAuthenticated || user?.role !== "admin") {
     return null;
   }
 

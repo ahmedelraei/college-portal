@@ -27,7 +27,12 @@ type AdminLoginFormData = z.infer<typeof adminLoginSchema>;
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { adminLogin, user, isAuthenticated } = useAuth();
+  const {
+    adminLogin,
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+  } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -40,24 +45,40 @@ export default function AdminLoginPage() {
 
   // Redirect if already authenticated as admin
   useEffect(() => {
-    if (isAuthenticated && user?.role === "ADMIN") {
-      router.push("/admin/panel");
-    } else if (isAuthenticated && user?.role === "STUDENT") {
-      router.push("/dashboard");
+    console.log(
+      "[AdminLogin] Effect triggered - authLoading:",
+      authLoading,
+      "isAuthenticated:",
+      isAuthenticated,
+      "user:",
+      user
+    );
+
+    if (!authLoading && isAuthenticated && user) {
+      console.log("[AdminLogin] User authenticated, role:", user.role);
+      if (user.role === "admin") {
+        console.log("[AdminLogin] Redirecting to /admin/panel");
+        router.push("/admin/panel");
+      } else if (user.role === "student") {
+        console.log("[AdminLogin] Student detected, redirecting to /dashboard");
+        router.push("/dashboard");
+      }
     }
-  }, [isAuthenticated, user, router]);
+  }, [authLoading, isAuthenticated, user, router]);
 
   const onSubmit = async (data: AdminLoginFormData) => {
     setIsLoading(true);
     try {
+      console.log("[AdminLogin] Starting admin login...");
       await adminLogin(data);
-      // Small delay to show success state
-      setTimeout(() => {
-        router.push("/admin/panel");
-      }, 500);
+      console.log(
+        "[AdminLogin] Admin login successful, waiting for state update..."
+      );
+      // Don't manually redirect here, let the useEffect handle it
+      // The useEffect will trigger when the user state updates
     } catch (error) {
       // Error handling is done in the context
-      console.error("Admin login error:", error);
+      console.error("[AdminLogin] Login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +97,9 @@ export default function AdminLoginPage() {
           <h1 className="text-3xl font-serif font-bold text-foreground mb-2">
             Modern Academy
           </h1>
-          <p className="text-muted-foreground font-medium">Administrative Portal</p>
+          <p className="text-muted-foreground font-medium">
+            Administrative Portal
+          </p>
         </div>
 
         {/* Admin Login Card */}

@@ -37,11 +37,9 @@ export class Student {
   @Column('decimal', { precision: 3, scale: 2, default: 0.0 })
   currentGPA: number;
 
-  @Field(() => [Registration], { nullable: true })
   @OneToMany(() => Registration, (registration) => registration.student)
   registrations: Registration[];
 
-  @Field(() => [Payment], { nullable: true })
   @OneToMany(() => Payment, (payment) => payment.student)
   payments: Payment[];
 

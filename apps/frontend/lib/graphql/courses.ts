@@ -22,6 +22,27 @@ export const GET_ALL_COURSES_QUERY = gql`
   }
 `;
 
+export const GET_AVAILABLE_COURSES_QUERY = gql`
+  query GetAvailableCourses {
+    getAvailableCourses {
+      id
+      courseCode
+      courseName
+      description
+      creditHours
+      semester
+      prerequisites {
+        id
+        courseCode
+        courseName
+      }
+      isActive
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const GET_COURSE_BY_ID_QUERY = gql`
   query GetCourseById($id: Int!) {
     getCourseById(id: $id) {
@@ -113,7 +134,7 @@ export interface CreateCourseInput {
   courseName: string;
   description: string;
   creditHours: number;
-  semester: string;
+  semester?: string;
   prerequisiteIds?: number[];
 }
 

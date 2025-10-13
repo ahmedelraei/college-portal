@@ -124,6 +124,7 @@ export function CourseForm({ course, onSuccess, onCancel }: CourseFormProps) {
           courseName: data.courseName,
           description: data.description,
           creditHours: data.creditHours,
+          semester: data.semester,
           prerequisiteIds: data.prerequisiteIds,
         };
         await createCourse({

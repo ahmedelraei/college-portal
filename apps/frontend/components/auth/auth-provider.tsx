@@ -88,11 +88,17 @@ function AuthProviderContent({ children }: AuthProviderProps) {
 
   const adminLogin = useCallback(async (adminLoginInput: AdminLoginInput) => {
     try {
+      console.log("[AuthProvider] Admin login mutation started");
       const { data } = await apolloClient.mutate({
         mutation: ADMIN_LOGIN_MUTATION,
         variables: { adminLoginInput },
       });
 
+      console.log("[AuthProvider] Admin login response:", data.adminLogin.user);
+      console.log(
+        "[AuthProvider] Setting user role:",
+        data.adminLogin.user.role
+      );
       setUser(data.adminLogin.user);
       setIsAuthenticated(true);
       toast.success(data.adminLogin.message);

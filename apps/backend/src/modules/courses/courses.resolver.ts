@@ -7,7 +7,7 @@ import {
   CourseFilterInput,
 } from './dto/course.inputs';
 import { UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GraphQLAuthGuard } from '../auth/guards/graphql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../entities/user.entity';
@@ -17,7 +17,7 @@ export class CoursesResolver {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Query(() => [Course], { name: 'getAllCourses' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(GraphQLAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async getAllCourses(
     @Args('filters', { nullable: true }) filters?: CourseFilterInput,
@@ -25,15 +25,23 @@ export class CoursesResolver {
     return this.coursesService.findAllFromGraphQL(filters);
   }
 
+  @Query(() => [Course], { name: 'getAvailableCourses' })
+  @UseGuards(GraphQLAuthGuard)
+  async getAvailableCourses(
+    @Args('filters', { nullable: true }) filters?: CourseFilterInput,
+  ) {
+    return this.coursesService.findAllFromGraphQL(filters);
+  }
+
   @Query(() => Course, { name: 'getCourseById' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(GraphQLAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async getCourseById(@Args('id', { type: () => Int }) id: number) {
     return this.coursesService.findOne(id);
   }
 
   @Mutation(() => Course, { name: 'createCourse' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(GraphQLAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async createCourse(
     @Args('createCourseInput') createCourseInput: CreateCourseInput,
@@ -42,7 +50,7 @@ export class CoursesResolver {
   }
 
   @Mutation(() => Course, { name: 'updateCourse' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(GraphQLAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async updateCourse(
     @Args('id', { type: () => Int }) id: number,
@@ -52,7 +60,7 @@ export class CoursesResolver {
   }
 
   @Mutation(() => String, { name: 'deleteCourse' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(GraphQLAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async deleteCourse(@Args('id', { type: () => Int }) id: number) {
     await this.coursesService.remove(id);

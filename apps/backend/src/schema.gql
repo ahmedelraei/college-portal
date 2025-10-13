@@ -7,6 +7,51 @@ input AdminLoginInput {
   password: String!
 }
 
+input BulkRegistrationInput {
+  courseIds: [Int!]!
+  semester: String!
+  year: Int!
+}
+
+type Course {
+  courseCode: String!
+  courseName: String!
+  createdAt: DateTime!
+  creditHours: Int!
+  dependentCourses: [Course!]
+  description: String!
+  id: Int!
+  isActive: Boolean!
+  prerequisites: [Course!]
+  pricePerCredit: Float!
+  semester: String!
+  totalCost: Float!
+  updatedAt: DateTime!
+}
+
+input CourseFilterInput {
+  creditHours: Int
+  search: String
+  semester: String
+}
+
+input CreateCourseInput {
+  courseCode: String!
+  courseName: String!
+  creditHours: Int!
+  description: String!
+  isActive: Boolean = true
+  prerequisiteIds: [Int!]
+  pricePerCredit: Int
+  semester: String!
+}
+
+input CreateRegistrationInput {
+  courseId: Int!
+  semester: String!
+  year: Int!
+}
+
 input CreateStudentInput {
   email: String!
   firstName: String!
@@ -36,14 +81,25 @@ type LogoutResponse {
 
 type Mutation {
   adminLogin(adminLoginInput: AdminLoginInput!): LoginResponse!
+  bulkRegisterForCourses(bulkRegisterInput: BulkRegistrationInput!): [Registration!]!
+  createCourse(createCourseInput: CreateCourseInput!): Course!
   createStudent(createStudentInput: CreateStudentInput!): User!
+  deleteCourse(id: Int!): String!
+  dropCourse(registrationId: Int!): String!
   login(loginInput: LoginInput!): LoginResponse!
   logout: LogoutResponse!
   register(registerInput: RegisterInput!): User!
+  registerForCourse(registerInput: CreateRegistrationInput!): Registration!
+  updateCourse(id: Int!, updateCourseInput: UpdateCourseInput!): Course!
 }
 
 type Query {
+  getAllCourses(filters: CourseFilterInput): [Course!]!
   getAllStudents: [User!]!
+  getAvailableCourses(filters: CourseFilterInput): [Course!]!
+  getCourseById(id: Int!): Course!
+  getMyCurrentSemesterRegistrations(semester: String!, year: Int!): [Registration!]!
+  getMyRegistrations: [Registration!]!
   isAuthenticated: Boolean!
   me: User
 }
@@ -56,19 +112,61 @@ input RegisterInput {
   studentId: Int!
 }
 
+type Registration {
+  calculateGradePoints: Float
+  course: Course!
+  courseId: Int!
+  createdAt: DateTime!
+  droppedAt: DateTime
+  grade: String
+  gradePoints: Float
+  id: Int!
+  isCompleted: Boolean!
+  isDropped: Boolean!
+  paymentStatus: String!
+  semester: String!
+  student: Student
+  studentId: Int!
+  updatedAt: DateTime!
+  year: Int!
+}
+
+type Student {
+  createdAt: DateTime!
+  currentGPA: Float!
+  email: String!
+  firstName: String!
+  fullName: String!
+  id: Int!
+  isActive: Boolean!
+  lastName: String!
+  role: String!
+  studentId: Int!
+  updatedAt: DateTime!
+  user: User
+  userId: Int!
+}
+
+input UpdateCourseInput {
+  courseCode: String
+  courseName: String
+  creditHours: Int
+  description: String
+  isActive: Boolean
+  prerequisiteIds: [Int!]
+  pricePerCredit: Int
+  semester: String
+}
+
 type User {
   createdAt: DateTime!
   email: String!
   firstName: String!
+  fullName: String!
   id: Int!
   isActive: Boolean!
   lastName: String!
-  role: UserRole!
+  role: String!
   studentId: Int
   updatedAt: DateTime!
-}
-
-enum UserRole {
-  ADMIN
-  STUDENT
 }

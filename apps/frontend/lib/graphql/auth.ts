@@ -31,7 +31,6 @@ export const ADMIN_LOGIN_MUTATION = gql`
   }
 `;
 
-
 export const LOGOUT_MUTATION = gql`
   mutation Logout {
     logout {
@@ -49,6 +48,7 @@ export const ME_QUERY = gql`
       firstName
       lastName
       role
+      currentGPA
     }
   }
 `;
@@ -93,8 +93,9 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: "STUDENT" | "ADMIN";
+  role: "student" | "admin";
   createdAt?: string;
+  currentGPA?: number;
 }
 
 export interface LoginInput {
