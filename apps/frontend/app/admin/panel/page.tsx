@@ -54,7 +54,13 @@ import {
   DELETE_COURSE_MUTATION,
   type Course,
 } from "@/lib/graphql/courses";
+import {
+  IS_REGISTRATION_ENABLED_QUERY,
+  TOGGLE_REGISTRATION_MUTATION,
+} from "@/lib/graphql/system-settings";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function AdminPanelPage() {
   const router = useRouter();
@@ -115,8 +121,20 @@ export default function AdminPanelPage() {
     skip: !isAuthenticated || user?.role !== "admin",
   });
 
+  const {
+    data: registrationStatusData,
+    loading: registrationStatusLoading,
+    refetch: refetchRegistrationStatus,
+  } = useQuery(IS_REGISTRATION_ENABLED_QUERY, {
+    skip: !isAuthenticated || user?.role !== "admin",
+  });
+
   const [deleteCourse] = useMutation(DELETE_COURSE_MUTATION, {
     refetchQueries: [GET_ALL_COURSES_QUERY],
+  });
+
+  const [toggleRegistration] = useMutation(TOGGLE_REGISTRATION_MUTATION, {
+    refetchQueries: [IS_REGISTRATION_ENABLED_QUERY],
   });
 
   const handleLogout = async () => {
@@ -170,6 +188,23 @@ export default function AdminPanelPage() {
     }
   };
 
+  const handleToggleRegistration = async (enabled: boolean) => {
+    try {
+      await toggleRegistration({
+        variables: { enabled },
+      });
+      toast.success(
+        enabled
+          ? "Course registration enabled for all students!"
+          : "Course registration disabled for all students!"
+      );
+      refetchRegistrationStatus();
+    } catch (error: any) {
+      console.error("Toggle registration error:", error);
+      toast.error(error.message || "Failed to toggle registration");
+    }
+  };
+
   // Show loading state while auth is being checked
   if (isLoading) {
     return (
@@ -191,6 +226,8 @@ export default function AdminPanelPage() {
 
   const students = studentsData?.getAllStudents || [];
   const courses = coursesData?.getAllCourses || [];
+  const isRegistrationEnabled =
+    registrationStatusData?.isRegistrationEnabled ?? true;
 
   return (
     <div className="min-h-screen bg-background">
@@ -245,6 +282,71 @@ export default function AdminPanelPage() {
               Manage students and system settings
             </p>
           </div>
+
+          {/* Registration Toggle Section */}
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-card to-primary/5">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-3 rounded-full">
+                    <Settings className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-serif">
+                      Course Registration Control
+                    </CardTitle>
+                    <CardDescription className="text-base mt-1">
+                      Enable or disable student course registration system-wide
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Status
+                    </p>
+                    <Badge
+                      variant={isRegistrationEnabled ? "default" : "secondary"}
+                      className={
+                        isRegistrationEnabled
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-red-600 hover:bg-red-700"
+                      }
+                    >
+                      {isRegistrationEnabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 bg-card p-4 rounded-lg border">
+                    <Label
+                      htmlFor="registration-toggle"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      {isRegistrationEnabled
+                        ? "Disable Registration"
+                        : "Enable Registration"}
+                    </Label>
+                    <Switch
+                      id="registration-toggle"
+                      checked={isRegistrationEnabled}
+                      onCheckedChange={handleToggleRegistration}
+                      disabled={registrationStatusLoading}
+                      className="data-[state=checked]:bg-green-600"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                <Shield className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <p>
+                  {isRegistrationEnabled
+                    ? "Students can currently register for courses. Toggle off to prevent new registrations."
+                    : "Course registration is disabled. Students cannot register for new courses until you enable it."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

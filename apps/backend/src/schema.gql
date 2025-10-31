@@ -91,18 +91,22 @@ type Mutation {
   logout: LogoutResponse!
   register(registerInput: RegisterInput!): User!
   registerForCourse(registerInput: CreateRegistrationInput!): Registration!
+  toggleRegistration(enabled: Boolean!): SystemSettings!
   updateCourse(id: Int!, updateCourseInput: UpdateCourseInput!): Course!
+  updateSystemSetting(input: UpdateSettingInput!): SystemSettings!
 }
 
 type Query {
   getAllCourses(filters: CourseFilterInput): [Course!]!
   getAllRegistrations: [Registration!]!
+  getAllSettings: [SystemSettings!]!
   getAllStudents: [User!]!
   getAvailableCourses(filters: CourseFilterInput): [Course!]!
   getCourseById(id: Int!): Course!
   getMyCurrentSemesterRegistrations(semester: String!, year: Int!): [Registration!]!
   getMyRegistrations: [Registration!]!
   isAuthenticated: Boolean!
+  isRegistrationEnabled: Boolean!
   me: User
 }
 
@@ -149,6 +153,15 @@ type Student {
   userId: Int!
 }
 
+type SystemSettings {
+  createdAt: DateTime!
+  description: String
+  id: Int!
+  settingKey: String!
+  settingValue: String!
+  updatedAt: DateTime!
+}
+
 input UpdateCourseInput {
   courseCode: String
   courseName: String
@@ -158,6 +171,11 @@ input UpdateCourseInput {
   prerequisiteIds: [Int!]
   pricePerCredit: Int
   semester: String
+}
+
+input UpdateSettingInput {
+  settingKey: String!
+  settingValue: String!
 }
 
 type User {

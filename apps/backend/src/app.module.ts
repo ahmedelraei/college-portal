@@ -10,6 +10,7 @@ import { StudentsModule } from './modules/students/students.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { RegistrationsModule } from './modules/registrations/registrations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 import { join } from 'path';
 
 @Module({
@@ -31,6 +32,7 @@ import { join } from 'path';
     CoursesModule,
     RegistrationsModule,
     PaymentsModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

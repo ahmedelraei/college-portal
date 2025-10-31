@@ -38,7 +38,9 @@ import {
   type Registration,
   type BulkRegistrationInput,
 } from "@/lib/graphql/registrations";
+import { IS_REGISTRATION_ENABLED_QUERY } from "@/lib/graphql/system-settings";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Course {
   id: number;
@@ -81,6 +83,9 @@ export default function CoursesPage() {
   const { data: registrationsData, loading: registrationsLoading } = useQuery(
     GET_MY_REGISTRATIONS_QUERY
   );
+
+  const { data: registrationStatusData, loading: registrationStatusLoading } =
+    useQuery(IS_REGISTRATION_ENABLED_QUERY);
 
   const [bulkRegister, { loading: bulkRegistering }] = useMutation(
     BULK_REGISTER_FOR_COURSES_MUTATION,
@@ -176,6 +181,8 @@ export default function CoursesPage() {
   const courses = coursesData?.getAvailableCourses || [];
   const registrations: Registration[] =
     registrationsData?.getMyRegistrations || [];
+  const isRegistrationEnabled =
+    registrationStatusData?.isRegistrationEnabled ?? true;
 
   // Get registered course IDs
   const registeredCourseIds = registrations
@@ -193,6 +200,13 @@ export default function CoursesPage() {
   });
 
   const toggleCourseSelection = (course: Course) => {
+    if (!isRegistrationEnabled) {
+      toast.error(
+        "Course registration is currently disabled by the administration. Please check back later."
+      );
+      return;
+    }
+
     const isSelected = selectedCourses.some((c) => c.id === course.id);
     if (isSelected) {
       setSelectedCourses(selectedCourses.filter((c) => c.id !== course.id));
@@ -994,6 +1008,22 @@ export default function CoursesPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Registration Disabled Alert */}
+        {!isRegistrationEnabled && (
+          <Alert variant="destructive" className="mb-6">
+            <Lock className="h-5 w-5" />
+            <AlertTitle className="text-lg font-semibold">
+              Course Registration Currently Disabled
+            </AlertTitle>
+            <AlertDescription className="text-base mt-2">
+              Course registration has been temporarily disabled by the
+              administration. You can browse available courses, but you cannot
+              register at this time. Please check back later or contact the
+              registrar's office for more information.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Search and Filters */}
         <div className="mb-6 flex flex-col md:flex-row gap-4">
           <div className="flex-1">
@@ -1081,6 +1111,11 @@ export default function CoursesPage() {
                     <Button variant="secondary" className="w-full" disabled>
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Already Registered
+                    </Button>
+                  ) : !isRegistrationEnabled ? (
+                    <Button variant="secondary" className="w-full" disabled>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Registration Disabled
                     </Button>
                   ) : (
                     <Button

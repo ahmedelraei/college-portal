@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -15,6 +16,7 @@ import { Course } from '../../entities/course.entity';
 import { Student } from '../../entities/student.entity';
 import { CoursesService } from '../courses/courses.service';
 import { StudentsService } from '../students/students.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { BulkRegistrationDto } from './dto/bulk-registration.dto';
@@ -30,12 +32,22 @@ export class RegistrationsService {
     private studentsRepository: Repository<Student>,
     private coursesService: CoursesService,
     private studentsService: StudentsService,
+    private systemSettingsService: SystemSettingsService,
   ) {}
 
   async create(
     createRegistrationDto: CreateRegistrationDto,
   ): Promise<Registration> {
     const { studentId, courseId, semester, year } = createRegistrationDto;
+
+    // Check if registration is enabled
+    const isRegistrationEnabled =
+      await this.systemSettingsService.isRegistrationEnabled();
+    if (!isRegistrationEnabled) {
+      throw new ForbiddenException(
+        'Course registration is currently disabled by the administration. Please check back later.',
+      );
+    }
 
     // Check if student exists
     const student = await this.studentsService.findOne(studentId);
@@ -94,6 +106,15 @@ export class RegistrationsService {
     bulkRegistrationDto: BulkRegistrationDto,
   ): Promise<Registration[]> {
     const { courseIds, semester, year } = bulkRegistrationDto;
+
+    // Check if registration is enabled
+    const isRegistrationEnabled =
+      await this.systemSettingsService.isRegistrationEnabled();
+    if (!isRegistrationEnabled) {
+      throw new ForbiddenException(
+        'Course registration is currently disabled by the administration. Please check back later.',
+      );
+    }
 
     // Get courses
     const courses = await this.coursesRepository.find({

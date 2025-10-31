@@ -9,6 +9,7 @@ import { Student } from '../../entities/student.entity';
 import { CoursesModule } from '../courses/courses.module';
 import { StudentsModule } from '../students/students.module';
 import { AuthModule } from '../auth/auth.module';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AuthModule } from '../auth/auth.module';
     CoursesModule,
     StudentsModule,
     AuthModule,
+    SystemSettingsModule,
   ],
   controllers: [RegistrationsController],
   providers: [RegistrationsService, RegistrationsResolver],
